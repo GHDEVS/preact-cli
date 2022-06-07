@@ -1,49 +1,56 @@
 const { join } = require('path');
-const { mkdir } = require('fs').promises;
-const shell = require('shelljs');
+const { mkdir, symlink } = require('fs').promises;
 const cmd = require('../../lib/commands');
 const { tmpDir } = require('./output');
-const { linkPackage } = require('./utils');
+const shell = require('shelljs');
 
-exports.create = async function (template, options) {
+const root = join(__dirname, '../../../..');
+
+async function linkPackage(name, from, to) {
+	try {
+		await symlink(
+			join(from, 'node_modules', name),
+			join(to, 'node_modules', name)
+		);
+	} catch {}
+}
+
+const argv = {
+	_: [],
+	src: 'src',
+	dest: 'build',
+	config: 'preact.config.js',
+	prerenderUrls: 'prerender-urls.json',
+	'inline-css': true,
+};
+
+exports.create = async function (template, name) {
 	let dest = await tmpDir();
+	name = name || `test-${template}`;
 
-	let opts = Object.assign({ name: `test-${template}`, cwd: '.' }, options);
-	await cmd.create(template, dest, opts);
+	await cmd.create(template, dest, { name, cwd: '.' });
 
 	return dest;
 };
 
 exports.build = async function (cwd, options, installNodeModules = false) {
-	const argv = {
-		src: 'src',
-		dest: 'build',
-		config: 'preact.config.js',
-		prerenderUrls: 'prerender-urls.json',
-		'inline-css': true,
-	};
-
 	if (!installNodeModules) {
 		await mkdir(join(cwd, 'node_modules'), { recursive: true }); // ensure exists, avoid exit()
-		await linkPackage('preact', cwd);
-		await linkPackage('preact-render-to-string', cwd);
+		await linkPackage('preact', root, cwd);
+		await linkPackage('preact-render-to-string', root, cwd);
 	} else {
-		shell.exec(`npm --prefix ${cwd} i`);
+		shell.cd(cwd);
+		shell.exec('npm i');
 	}
 
-	let opts = Object.assign({ cwd }, argv, options);
+	let opts = Object.assign({}, { cwd }, argv, options);
 	return await cmd.build(opts.src, opts);
 };
 
-exports.watch = function (cwd, options) {
-	const argv = {
-		src: 'src',
-		host: '127.0.0.1',
-		https: false,
-		config: 'preact.config.js',
-		prerenderUrls: 'prerender-urls.json',
-	};
-
-	let opts = Object.assign({ cwd }, argv, options);
-	return cmd.watch(opts.src, opts);
+exports.watch = function (cwd, port, host = '127.0.0.1') {
+	const args = { ...argv };
+	delete args.dest;
+	delete args['inline-css'];
+	let opts = Object.assign({ cwd, host, port, https: false }, args);
+	return cmd.watch(argv.src, opts);
 };

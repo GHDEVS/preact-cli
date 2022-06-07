@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
-const { join, relative, resolve } = require('path');
-const { stat, symlink, readFile, writeFile } = require('fs').promises;
+const { relative, resolve } = require('path');
+const { stat, readFile, writeFile } = require('fs').promises;
 const pRetry = require('p-retry');
 const { promisify } = require('util');
 const glob = promisify(require('glob').glob);
@@ -61,16 +61,6 @@ function waitUntil(action, errorMessage) {
 
 const sleep = promisify(setTimeout);
 
-async function linkPackage(name, cwd) {
-	const root = join(__dirname, '../../../..');
-	try {
-		await symlink(
-			join(root, 'node_modules', name),
-			join(cwd, 'node_modules', name)
-		);
-	} catch {}
-}
-
 expect.extend({
 	toFindMatchingKey(key, matchingKey) {
 		if (matchingKey) {
@@ -119,5 +109,4 @@ module.exports = {
 	log,
 	waitUntil,
 	sleep,
-	linkPackage,
 };

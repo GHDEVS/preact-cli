@@ -83,6 +83,13 @@ describe('preact build', () => {
 	it('builds the `typescript` template', async () => {
 		let dir = await create('typescript');
 
+		// The tsconfig.json in the template covers the test directory,
+		// so TS will error out if it can't find even test-only module definitions
+		shell.cd(dir);
+		//shell.exec('npm i @types/enzyme@3.10.11 enzyme-adapter-preact-pure');
+		// Remove when https://github.com/preactjs/enzyme-adapter-preact-pure/issues/161 is resolved
+		shell.exec('rm tsconfig.json');
+
 		await expect(build(dir)).resolves.not.toThrow();
 	});
 
@@ -354,7 +361,9 @@ describe('preact build', () => {
 			const { code, stderr } = shell.exec(
 				`node ${join(__dirname, '../lib/index.js')} build --invalid-arg`
 			);
-			expect(stderr).toMatch('Invalid argument invalid-arg passed to build.');
+			expect(stderr).toMatch(
+				"Invalid argument '--invalid-arg' passed to build."
+			);
 			expect(code).toBe(1);
 		});
 	});
