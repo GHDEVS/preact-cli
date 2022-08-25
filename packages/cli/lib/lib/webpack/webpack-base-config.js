@@ -45,19 +45,6 @@ function resolveTsconfig(cwd, isProd) {
 	}
 }
 
-function getSassConfiguration(...includePaths) {
-	const config = {
-		sourceMap: true,
-		sassOptions: {
-			includePaths,
-		},
-	};
-
-	Object.defineProperty(config, 'includePaths', { value: includePaths });
-
-	return config;
-}
-
 /**
  * @returns {import('webpack').Configuration}
  */
@@ -177,7 +164,12 @@ module.exports = function createBaseConfig(env) {
 							options: {
 								cwd,
 								loader: tryResolveOptionalLoader('sass-loader'),
-								options: getSassConfiguration(...nodeModules),
+								options: {
+									sourceMap: true,
+									sassOptions: {
+										includePaths: [...nodeModules],
+									},
+								},
 							},
 						},
 					],
